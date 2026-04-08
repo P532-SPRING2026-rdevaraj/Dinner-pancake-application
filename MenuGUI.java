@@ -1,41 +1,37 @@
 import javax.swing.*;
 import javax.swing.border.*;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
 
 public class MenuGUI extends JFrame {
 
-    private PancakeHouseMenu pancakeHouseMenu;
-    private DinerMenu        dinerMenu;
-    private CafeMenu         cafeMenu;
-    private Waitress         waitress;
+    private final MenuComponent allMenus;
 
-    // ── colour palette ───────────────────────────────────────────────────────
     private static final Color BG           = new Color(245, 240, 230);
     private static final Color HEADER_BG    = new Color(60,  40,  20);
     private static final Color HEADER_FG    = new Color(255, 230, 160);
-    private static final Color PANCAKE_BG   = new Color(255, 248, 220);
-    private static final Color DINER_BG     = new Color(220, 235, 255);
-    private static final Color CAFE_BG      = new Color(220, 255, 225);   // green tint for café
     private static final Color PANEL_BORDER = new Color(139, 90,  43);
     private static final Color VEG_COLOR    = new Color(40, 140,  40);
     private static final Color PRICE_COLOR  = new Color(160,  40,  40);
     private static final Color BTN_BG       = new Color(80,  50,  20);
     private static final Color BTN_FG       = Color.WHITE;
+    private static final Color[] PANEL_COLORS = {
+        new Color(255, 248, 220),
+        new Color(220, 235, 255),
+        new Color(220, 255, 225)
+    };
 
-    public MenuGUI() {
-        pancakeHouseMenu = new PancakeHouseMenu();
-        dinerMenu        = new DinerMenu();
-        cafeMenu         = new CafeMenu();
-        waitress         = new Waitress(pancakeHouseMenu, dinerMenu, cafeMenu);
+    public MenuGUI(MenuComponent allMenus) {
+        this.allMenus = allMenus;
 
         setTitle("Objectville Restaurant");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout(10, 10));
         getContentPane().setBackground(BG);
 
-        add(buildHeader(),   BorderLayout.NORTH);
-        add(buildMenuArea(), BorderLayout.CENTER);
+        add(buildHeader(),    BorderLayout.NORTH);
+        add(buildMenuArea(),  BorderLayout.CENTER);
         add(buildButtonBar(), BorderLayout.SOUTH);
 
         pack();
@@ -44,7 +40,6 @@ public class MenuGUI extends JFrame {
         setVisible(true);
     }
 
-    // ── header ───────────────────────────────────────────────────────────────
     private JPanel buildHeader() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(HEADER_BG);
@@ -63,35 +58,29 @@ public class MenuGUI extends JFrame {
         return panel;
     }
 
-    // ── three side-by-side menu panels ───────────────────────────────────────
     private JPanel buildMenuArea() {
-        JPanel area = new JPanel(new GridLayout(1, 3, 12, 0));
+        ArrayList<MenuComponent> subMenus = ((Menu) allMenus).getChildren();
+
+        JPanel area = new JPanel(new GridLayout(1, subMenus.size(), 12, 0));
         area.setBackground(BG);
         area.setBorder(BorderFactory.createEmptyBorder(10, 14, 6, 14));
 
-        area.add(buildSingleMenuPanel("Objectville Pancake House",
-                new PancakeHouseMenuIterator(pancakeHouseMenu.getMenuItems()),
-                PANCAKE_BG));
-
-        area.add(buildSingleMenuPanel("Objectville Diner",
-                new DinerMenuIterator(dinerMenu.getMenuItems()),
-                DINER_BG));
-
-        area.add(buildSingleMenuPanel("Objectville Café",
-                new CafeMenuIterator(cafeMenu.getItems()),
-                CAFE_BG));
+        for (int i = 0; i < subMenus.size(); i++) {
+            Color bg = PANEL_COLORS[i % PANEL_COLORS.length];
+            area.add(buildMenuPanel(subMenus.get(i), bg));
+        }
 
         return area;
     }
 
-    private JPanel buildSingleMenuPanel(String title, MenuIterator iterator, Color bg) {
+    private JPanel buildMenuPanel(MenuComponent menu, Color bg) {
         JPanel outer = new JPanel(new BorderLayout(0, 6));
         outer.setBackground(bg);
         outer.setBorder(BorderFactory.createCompoundBorder(
                 new LineBorder(PANEL_BORDER, 2, true),
                 BorderFactory.createEmptyBorder(10, 12, 10, 12)));
 
-        JLabel lbl = new JLabel(title, SwingConstants.CENTER);
+        JLabel lbl = new JLabel(menu.getName(), SwingConstants.CENTER);
         lbl.setFont(new Font("Serif", Font.BOLD | Font.ITALIC, 18));
         lbl.setForeground(HEADER_BG);
         lbl.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, PANEL_BORDER));
@@ -101,9 +90,11 @@ public class MenuGUI extends JFrame {
         items.setLayout(new BoxLayout(items, BoxLayout.Y_AXIS));
         items.setBackground(bg);
 
-        while (iterator.hasNext()) {
-            items.add(buildItemRow(iterator.next(), bg));
-            items.add(Box.createVerticalStrut(4));
+        for (MenuComponent child : ((Menu) menu).getChildren()) {
+            if (child instanceof MenuItem) {
+                items.add(buildItemRow(child, bg));
+                items.add(Box.createVerticalStrut(4));
+            }
         }
 
         JScrollPane scroll = new JScrollPane(items,
@@ -122,7 +113,7 @@ public class MenuGUI extends JFrame {
         return outer;
     }
 
-    private JPanel buildItemRow(MenuItem item, Color bg) {
+    private JPanel buildItemRow(MenuComponent item, Color bg) {
         JPanel row = new JPanel(new BorderLayout(6, 0));
         row.setBackground(bg);
 
@@ -163,36 +154,11 @@ public class MenuGUI extends JFrame {
         return row;
     }
 
-    // ── button bar ───────────────────────────────────────────────────────────
     private JPanel buildButtonBar() {
         JPanel bar = new JPanel(new FlowLayout(FlowLayout.CENTER, 14, 8));
         bar.setBackground(HEADER_BG);
 
-        bar.add(makeButton("Task 1 – Separate menus", e -> {
-            pancakeHouseMenu.printMenu();
-            dinerMenu.printMenu();
-            System.out.println("\n--- OBJECTVILLE CAFÉ MENU ---");
-            for (MenuItem item : cafeMenu.getItems().values()) {
-                System.out.println(item);
-            }
-        }));
-
-        bar.add(makeButton("Task 2 – Combined (no pattern)", e ->
-                waitress.printMenuNoPattern()));
-
-        bar.add(makeButton("Task 3 – Iterator Pattern", e ->
-                waitress.printMenu()));
-
-        bar.add(makeButton("Vegetarian Only", e ->
-                waitress.printVegetarianMenu()));
-
-        bar.add(makeButton("Alternating Diner Menu", e -> {
-            // print both schedules so the user can see both sets clearly
-            waitress.printAlternatingDinerMenu(true);   // Mon/Wed/Fri/Sun
-            waitress.printAlternatingDinerMenu(false);  // Tue/Thu/Sat
-            System.out.println("\n>> Today's schedule: "
-                    + AlternatingDinerMenuIterator.currentScheduleLabel());
-        }));
+        bar.add(makeButton("Print All Menus (Composite)", e -> new Waitress(allMenus).printMenu()));
 
         return bar;
     }
@@ -211,28 +177,47 @@ public class MenuGUI extends JFrame {
         return btn;
     }
 
-    // ── main ─────────────────────────────────────────────────────────────────
     public static void main(String[] args) {
-        PancakeHouseMenu pancakeMenu = new PancakeHouseMenu();
-        DinerMenu        dinerMenu   = new DinerMenu();
-        CafeMenu         cafeMenu    = new CafeMenu();
+        MenuComponent pancakeHouseMenu = new Menu("PANCAKE HOUSE MENU", "Breakfast");
+        MenuComponent dinerMenu        = new Menu("DINER MENU",         "Lunch");
+        MenuComponent cafeMenu         = new Menu("CAFE MENU",          "Dinner");
+        MenuComponent allMenus         = new Menu("ALL MENUS",          "All menus combined");
 
-        // ── Task 1: print each menu separately ──────────────────────────────
-        System.out.println("========== TASK 1: Individual Menus (no pattern) ==========");
-        pancakeMenu.printMenu();
-        dinerMenu.printMenu();
-        System.out.println("\n--- OBJECTVILLE CAFÉ MENU ---");
-        for (MenuItem item : cafeMenu.getItems().values()) System.out.println(item);
+        allMenus.add(pancakeHouseMenu);
+        allMenus.add(dinerMenu);
+        allMenus.add(cafeMenu);
 
-        // ── Task 2: combined without iterator ───────────────────────────────
-        Waitress waitress = new Waitress(pancakeMenu, dinerMenu, cafeMenu);
-        waitress.printMenuNoPattern();
+        pancakeHouseMenu.add(new MenuItem("K&B's Pancake Breakfast",
+                "Pancakes with scrambled eggs, and toast", true, 2.99));
+        pancakeHouseMenu.add(new MenuItem("Regular Pancake Breakfast",
+                "Pancakes with fried eggs, sausage", false, 2.99));
+        pancakeHouseMenu.add(new MenuItem("Blueberry Pancakes",
+                "Pancakes made with fresh blueberries, and blueberry syrup", true, 3.49));
+        pancakeHouseMenu.add(new MenuItem("Waffles",
+                "Waffles, with your choice of blueberries or strawberries", true, 3.59));
 
-        // ── Task 3: combined with iterator pattern ───────────────────────────
-        waitress.printMenu();
-        waitress.printVegetarianMenu();
+        dinerMenu.add(new MenuItem("Vegetarian BLT",
+                "(Fakin') Bacon with lettuce & tomato on whole wheat", true, 2.99));
+        dinerMenu.add(new MenuItem("BLT",
+                "Bacon with lettuce & tomato on whole wheat", false, 2.99));
+        dinerMenu.add(new MenuItem("Soup of the Day",
+                "A bowl of the soup of the day, with a side of potato salad", false, 3.29));
+        dinerMenu.add(new MenuItem("Hot Dog",
+                "A hot dog, with saurkraut, topped with cheese", false, 3.05));
+        dinerMenu.add(new MenuItem("Steamed Veggies and Broccoli",
+                "A medley of steamed vegetables with rice", true, 3.99));
+        dinerMenu.add(new MenuItem("Pasta",
+                "Spaghetti with marinara sauce, and a slice of sourdough bread", true, 3.89));
 
-        // ── Launch GUI ───────────────────────────────────────────────────────
-        SwingUtilities.invokeLater(MenuGUI::new);
+        cafeMenu.add(new MenuItem("Veggie Burger and Air Fries",
+                "Veggie burger on a whole wheat bun, lettuce, tomato, and fries", true, 3.99));
+        cafeMenu.add(new MenuItem("Soup of the Day",
+                "A cup of the soup of the day, with a side salad", false, 3.69));
+        cafeMenu.add(new MenuItem("Burrito",
+                "A large burrito, with whole pinto beans, salsa, guacamole", true, 4.29));
+
+        new Waitress(allMenus).printMenu();
+
+        SwingUtilities.invokeLater(() -> new MenuGUI(allMenus));
     }
 }
