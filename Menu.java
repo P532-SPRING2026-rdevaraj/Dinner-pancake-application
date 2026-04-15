@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Iterator;
 
 public class Menu extends MenuComponent {
 
@@ -41,12 +42,27 @@ public class Menu extends MenuComponent {
     }
 
     @Override
+    public Iterator<MenuComponent> createIterator() {
+        return new CompositeIterator(menuComponents.iterator());
+    }
+
+    @Override
     public void print() {
         System.out.print("\n" + getName());
         System.out.println(", " + getDescription());
         System.out.println("-------------------");
         for (MenuComponent component : menuComponents) {
             component.print();
+        }
+    }
+
+    @Override
+    public void printVegetarian() {
+        System.out.print("\n" + getName());
+        System.out.println(", " + getDescription());
+        System.out.println("-------------------");
+        for (MenuComponent component : menuComponents) {
+            component.printVegetarian();
         }
     }
 }

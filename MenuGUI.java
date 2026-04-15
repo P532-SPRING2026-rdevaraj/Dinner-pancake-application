@@ -158,7 +158,10 @@ public class MenuGUI extends JFrame {
         JPanel bar = new JPanel(new FlowLayout(FlowLayout.CENTER, 14, 8));
         bar.setBackground(HEADER_BG);
 
-        bar.add(makeButton("Print All Menus (Composite)", e -> new Waitress(allMenus).printMenu()));
+        bar.add(makeButton("Print All Menus (Composite)",    e -> new Waitress(allMenus).printMenu()));
+        bar.add(makeButton("Print Vegetarian Items",         e -> new Waitress(allMenus).printVegetarianMenu()));
+        bar.add(makeButton("Vegetarian 1 (Manual Traverse)", e -> new Waitress(allMenus).printVegetarianMenu1()));
+        bar.add(makeButton("Vegetarian 2 (Composite Iter)",  e -> new Waitress(allMenus).printVegetarianMenu2()));
 
         return bar;
     }
@@ -217,6 +220,9 @@ public class MenuGUI extends JFrame {
                 "A large burrito, with whole pinto beans, salsa, guacamole", true, 4.29));
 
         new Waitress(allMenus).printMenu();
+
+        System.out.println("\n\n--- VEGETARIAN ITEMS ONLY ---");
+        new Waitress(allMenus).printVegetarianMenu();
 
         SwingUtilities.invokeLater(() -> new MenuGUI(allMenus));
     }
